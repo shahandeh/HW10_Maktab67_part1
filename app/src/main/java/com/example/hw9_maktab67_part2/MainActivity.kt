@@ -6,12 +6,14 @@ import android.content.res.Configuration
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.PersistableBundle
+import android.util.Log
 import android.view.View
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.ActivityResultCallback
 import androidx.activity.result.contract.ActivityResultContract
 import androidx.core.content.ContextCompat
+import androidx.core.os.bundleOf
 import com.example.hw9_maktab67_part2.databinding.ActivityMainBinding
 
 class MainActivity : AppCompatActivity() {
@@ -41,11 +43,6 @@ class MainActivity : AppCompatActivity() {
 
         bind = ActivityMainBinding.inflate(layoutInflater)
         setContentView(bind.root)
-
-//        if (savedInstanceState != null) {
-//            userAnswer = savedInstanceState.getIntArray("userAnswer")!!
-//            userCheated = savedInstanceState.getIntArray("userCheated")!!
-//        }
 
         questionTV = bind.tv
 
@@ -89,23 +86,28 @@ class MainActivity : AppCompatActivity() {
         }
         val callback = ActivityResultCallback<Int> { result ->
             userCheated[currentQuestionNumber] = result
-            if (result == 1) Toast.makeText(this, "Cheating is Wrong", Toast.LENGTH_SHORT).show()
+            if (result == 1) cheatToast()
         }
         val activityResult = registerForActivityResult(contract, callback)
-        bind.cheat.setOnClickListener { activityResult.launch("cheat") }
+        bind.cheat.setOnClickListener {
+            val sp = getSharedPreferences("questionAnswer", Context.MODE_PRIVATE)
+            val spEdit = sp.edit()
+            spEdit.putInt("answer", questionAnswer[currentQuestionNumber])
+            spEdit.apply()
+            activityResult.launch("cheat") }
     }
 
     private fun setCurrentQuestionNumber(v: View) {
         if (v.id == bind.next.id) {
             if (currentQuestionNumber < listOfQuestion.size - 1) {
                 currentQuestionNumber += 1
-                questionTV.text = listOfQuestion[currentQuestionNumber].toString()
+                questionTV.text = listOfQuestion[currentQuestionNumber]
             }
             bind.prev.isEnabled = true
         } else {
             if (currentQuestionNumber > 0) {
                 currentQuestionNumber -= 1
-                questionTV.text = listOfQuestion[currentQuestionNumber].toString()
+                questionTV.text = listOfQuestion[currentQuestionNumber]
             }
             bind.next.isEnabled = true
         }
@@ -129,6 +131,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun answerValidateToast(int: Int) {
         userAnswer[currentQuestionNumber] = int
+        cheatToast()
         if (questionAnswer[currentQuestionNumber] == int)
             Toast.makeText(this, "Correct!", Toast.LENGTH_SHORT).show()
         else
@@ -164,11 +167,28 @@ class MainActivity : AppCompatActivity() {
         outState.putIntArray("userCheated", userCheated)
     }
 
-    override fun onConfigurationChanged(newConfig: Configuration) {
-        super.onConfigurationChanged(newConfig)
-        var bundle = Bundle()
-        userAnswer = bundle.getIntArray("userAnswer") as IntArray
-        userCheated = bundle.getIntArray("userCheated") as IntArray
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        val bundle = bundleOf(
+            "userAnswer" to userAnswer,
+            "userCheated" to userCheated,
+            "currentQuestionNumber" to currentQuestionNumber
+        )
+        outState.putBundle("save", bundle)
     }
 
+    override fun onRestoreInstanceState(savedInstanceState: Bundle) {
+        super.onRestoreInstanceState(savedInstanceState)
+        val bundle = savedInstanceState.getBundle("save")
+        if (bundle != null) {
+            userAnswer = bundle.getIntArray("userAnswer")!!
+            userCheated = bundle.getIntArray("userCheated")!!
+            currentQuestionNumber = bundle.getInt("currentQuestionNumber")
+        }
+
+        answerButtonColor()
+        cheatToast()
+        currentQuestionNumber--
+        setCurrentQuestionNumber(bind.next)
+    }
 }
