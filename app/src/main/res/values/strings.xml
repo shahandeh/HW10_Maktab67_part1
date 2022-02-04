@@ -1,8 +1,9 @@
 <resources>
-    <string name="app_name">HW9_Maktab67_part2</string>
+    <string name="app_name">GeoQuizViewModel</string>
     <string name="answerTrue">TRUE</string>
     <string name="answerFalse">FALSE</string>
     <string name="next">NEXT</string>
     <string name="prev">PREV</string>
     <string name="cheat">CHEAT!</string>
+    <string name="show_answer">SHOW ANSWER</string>
 </resources>
